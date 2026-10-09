@@ -9,6 +9,7 @@ import {
   Participant
 } from './types';
 import { calculateLevel1Result } from './logic';
+import { fetchSessionFromSupabase, saveSessionToSupabase } from './supabase';
 import fs from 'fs';
 import path from 'path';
 
@@ -50,7 +51,7 @@ function loadFromDisk() {
 
 loadFromDisk();
 
-// Upstash Redis REST API Helper for 100% Cloud Persistence on Vercel
+// Upstash Redis REST API Fallback
 function getRedisConfig() {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -95,16 +96,31 @@ async function loadFromKV(pin: string): Promise<SessionData | null> {
   return null;
 }
 
+// Master sync function: Saves to Memory, Disk, Supabase, and Redis KV
+async function persistState(pin: string, data: SessionData) {
+  saveToDisk();
+  await saveSessionToSupabase(pin, data);
+  await syncToKV(pin, data);
+}
+
 export async function getOrCreateSession(pin = 'IA-2026'): Promise<SessionData> {
   const cleanPin = pin.toUpperCase().trim();
 
-  // Try reading from Upstash Redis if configured
+  // 1. Try reading from Supabase
+  const supabaseData = await fetchSessionFromSupabase(cleanPin);
+  if (supabaseData) {
+    sessions[cleanPin] = supabaseData;
+    return supabaseData;
+  }
+
+  // 2. Try reading from Upstash Redis KV
   const kvData = await loadFromKV(cleanPin);
   if (kvData) {
     sessions[cleanPin] = kvData;
     return kvData;
   }
 
+  // 3. Fallback to Memory / File store
   if (!sessions[cleanPin]) {
     sessions[cleanPin] = {
       pin: cleanPin,
@@ -117,8 +133,7 @@ export async function getOrCreateSession(pin = 'IA-2026'): Promise<SessionData> 
       level4Submissions: [],
       updatedAt: Date.now()
     };
-    saveToDisk();
-    await syncToKV(cleanPin, sessions[cleanPin]);
+    await persistState(cleanPin, sessions[cleanPin]);
   }
   return sessions[cleanPin];
 }
@@ -133,8 +148,7 @@ export async function registerParticipant(pin: string, id: string, name: string)
     participant.name = name;
   }
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return participant;
 }
 
@@ -142,8 +156,7 @@ export async function setActiveLevel(pin: string, activeLevel: LevelId): Promise
   const session = await getOrCreateSession(pin);
   session.activeLevel = activeLevel;
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -155,8 +168,7 @@ export async function submitLevel0(pin: string, answer: Level0Answer): Promise<S
   session.level0Answers.push(answer);
   await registerParticipant(pin, answer.participantId, answer.participantName);
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -168,8 +180,7 @@ export async function submitLevel1(pin: string, result: Level1Result): Promise<S
   session.level1Results.push(result);
   await registerParticipant(pin, result.participantId, result.participantName);
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -181,8 +192,7 @@ export async function submitLevel2(pin: string, submission: Level2Submission): P
   session.level2Submissions.push(submission);
   await registerParticipant(pin, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -194,8 +204,7 @@ export async function submitLevel3(pin: string, submission: Level3Submission): P
   session.level3Submissions.push(submission);
   await registerParticipant(pin, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -207,8 +216,7 @@ export async function submitLevel4(pin: string, submission: Level4Submission): P
   session.level4Submissions.push(submission);
   await registerParticipant(pin, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -220,8 +228,7 @@ export async function resetSession(pin: string): Promise<SessionData> {
   session.level3Submissions = [];
   session.level4Submissions = [];
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
 
@@ -343,7 +350,6 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
   }
 
   session.updatedAt = Date.now();
-  saveToDisk();
-  await syncToKV(pin, session);
+  await persistState(pin, session);
   return session;
 }
