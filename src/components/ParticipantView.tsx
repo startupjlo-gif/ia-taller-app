@@ -45,14 +45,20 @@ export const ParticipantView: React.FC<ParticipantViewProps> = ({ initialPin = '
     }
   }, []);
 
-  // Poll session state to sync presenter level
+  // Poll session state with anti-cache timestamp to prevent frozen sessions
   useEffect(() => {
     if (!hasJoined) return;
     let isMounted = true;
 
     const pollSession = async () => {
       try {
-        const res = await fetch(`/api/session?pin=${pin}`, { cache: 'no-store' });
+        const res = await fetch(`/api/session?pin=${pin}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
         if (res.ok) {
           const data: SessionData = await res.json();
           if (isMounted) {
@@ -96,6 +102,18 @@ export const ParticipantView: React.FC<ParticipantViewProps> = ({ initialPin = '
       });
     } catch (err) {
       console.error('Participant join error:', err);
+    }
+  };
+
+  const handleLeave = () => {
+    if (confirm('¿Deseas salir o cambiar de participante?')) {
+      localStorage.removeItem('ia_taller_participant_name');
+      localStorage.removeItem('ia_taller_participant_id');
+      const newId = 'p_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('ia_taller_participant_id', newId);
+      setParticipantId(newId);
+      setParticipantName('');
+      setHasJoined(false);
     }
   };
 
@@ -149,7 +167,7 @@ export const ParticipantView: React.FC<ParticipantViewProps> = ({ initialPin = '
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
                 className="w-full p-3.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-medium text-white focus:border-indigo-500 focus:outline-none"
-                placeholder="Ej. Carlos - Ac me Corp"
+                placeholder="Ej. Carlos - Acme Corp"
                 required
               />
             </div>
@@ -169,7 +187,12 @@ export const ParticipantView: React.FC<ParticipantViewProps> = ({ initialPin = '
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
-      <Header pin={pin} isPresenter={false} participantName={participantName} />
+      <Header
+        pin={pin}
+        isPresenter={false}
+        participantName={participantName}
+        onLeaveSession={handleLeave}
+      />
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 space-y-6">
         {/* Sync Status Banner */}

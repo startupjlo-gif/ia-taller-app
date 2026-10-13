@@ -37,7 +37,13 @@ export const PresenterDashboard: React.FC<PresenterDashboardProps> = ({
 
     const fetchSession = async () => {
       try {
-        const res = await fetch(`/api/session?pin=${pin}`, { cache: 'no-store' });
+        const res = await fetch(`/api/session?pin=${pin}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
         if (res.ok) {
           const data: SessionData = await res.json();
           if (isMounted) {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Monitor, Phone, Users, RefreshCw } from 'lucide-react';
+import { Sparkles, Monitor, Phone, Users, RefreshCw, LogOut } from 'lucide-react';
 import { LevelId } from '@/lib/types';
 
 interface HeaderProps {
@@ -13,6 +13,7 @@ interface HeaderProps {
   onResetSession?: () => void;
   onGenerateDemo?: () => void;
   participantName?: string;
+  onLeaveSession?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,7 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   onLevelChange,
   onResetSession,
   onGenerateDemo,
-  participantName
+  participantName,
+  onLeaveSession
 }) => {
   const levelNames: Record<LevelId, string> = {
     0: 'Nivel 0: Conceptos',
@@ -125,11 +127,21 @@ export const Header: React.FC<HeaderProps> = ({
               </a>
             </>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {participantName && (
                 <span className="text-xs text-indigo-300 bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-800/50">
                   👤 {participantName}
                 </span>
+              )}
+              {onLeaveSession && (
+                <button
+                  onClick={onLeaveSession}
+                  className="px-2.5 py-1 bg-slate-850 hover:bg-red-950/60 border border-slate-700 hover:border-red-700/60 text-slate-300 hover:text-red-300 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all"
+                  title="Cambiar participante o salir"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Salir</span>
+                </button>
               )}
             </div>
           )}

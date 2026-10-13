@@ -18,7 +18,20 @@ const supabaseKey =
   process.env.NEXT_PUBLIC_ANON_KEY ||
   DEFAULT_SUPABASE_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  global: {
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        cache: 'no-store',
+      });
+    },
+  },
+});
 
 export async function fetchSessionFromSupabase(pin: string): Promise<SessionData | null> {
   try {
@@ -30,7 +43,6 @@ export async function fetchSessionFromSupabase(pin: string): Promise<SessionData
       .single();
 
     if (error) {
-      // If code is PGRST116 (no row found), that's expected on first run
       if (error.code !== 'PGRST116') {
         console.warn('Supabase fetch notice:', error.message);
       }
