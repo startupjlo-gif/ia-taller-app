@@ -103,10 +103,21 @@ async function persistState(pin: string, data: SessionData) {
   await syncToKV(pin, data);
 }
 
+function addOrUpdateParticipant(session: SessionData, id: string, name: string): Participant {
+  let participant = session.participants.find((p) => p.id === id);
+  if (!participant) {
+    participant = { id, name: name || 'Participante Anónimo', joinedAt: Date.now() };
+    session.participants.push(participant);
+  } else {
+    participant.name = name;
+  }
+  return participant;
+}
+
 export async function getOrCreateSession(pin = 'IA-2026'): Promise<SessionData> {
   const cleanPin = pin.toUpperCase().trim();
 
-  // 1. Try reading from Supabase
+  // 1. Try reading fresh state from Supabase
   const supabaseData = await fetchSessionFromSupabase(cleanPin);
   if (supabaseData) {
     sessions[cleanPin] = supabaseData;
@@ -140,13 +151,7 @@ export async function getOrCreateSession(pin = 'IA-2026'): Promise<SessionData> 
 
 export async function registerParticipant(pin: string, id: string, name: string): Promise<Participant> {
   const session = await getOrCreateSession(pin);
-  let participant = session.participants.find((p) => p.id === id);
-  if (!participant) {
-    participant = { id, name: name || 'Participante Anónimo', joinedAt: Date.now() };
-    session.participants.push(participant);
-  } else {
-    participant.name = name;
-  }
+  const participant = addOrUpdateParticipant(session, id, name);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return participant;
@@ -166,7 +171,7 @@ export async function submitLevel0(pin: string, answer: Level0Answer): Promise<S
     (a) => a.participantId !== answer.participantId
   );
   session.level0Answers.push(answer);
-  await registerParticipant(pin, answer.participantId, answer.participantName);
+  addOrUpdateParticipant(session, answer.participantId, answer.participantName);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return session;
@@ -178,7 +183,7 @@ export async function submitLevel1(pin: string, result: Level1Result): Promise<S
     (r) => r.participantId !== result.participantId
   );
   session.level1Results.push(result);
-  await registerParticipant(pin, result.participantId, result.participantName);
+  addOrUpdateParticipant(session, result.participantId, result.participantName);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return session;
@@ -190,7 +195,7 @@ export async function submitLevel2(pin: string, submission: Level2Submission): P
     (s) => s.participantId !== submission.participantId
   );
   session.level2Submissions.push(submission);
-  await registerParticipant(pin, submission.participantId, submission.participantName);
+  addOrUpdateParticipant(session, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return session;
@@ -202,7 +207,7 @@ export async function submitLevel3(pin: string, submission: Level3Submission): P
     (s) => s.participantId !== submission.participantId
   );
   session.level3Submissions.push(submission);
-  await registerParticipant(pin, submission.participantId, submission.participantName);
+  addOrUpdateParticipant(session, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return session;
@@ -214,7 +219,7 @@ export async function submitLevel4(pin: string, submission: Level4Submission): P
     (s) => s.participantId !== submission.participantId
   );
   session.level4Submissions.push(submission);
-  await registerParticipant(pin, submission.participantId, submission.participantName);
+  addOrUpdateParticipant(session, submission.participantId, submission.participantName);
   session.updatedAt = Date.now();
   await persistState(pin, session);
   return session;
@@ -246,7 +251,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
   for (let idx = 0; idx < sampleNames.length; idx++) {
     const name = sampleNames[idx];
     const id = `user_demo_${idx + 1}`;
-    await registerParticipant(pin, id, name);
+    addOrUpdateParticipant(session, id, name);
 
     // Level 0 Demo
     const l0Matches: Record<string, string> = {
@@ -258,7 +263,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
       c6: 'c6',
       c7: 'c7'
     };
-    await submitLevel0(pin, {
+    session.level0Answers.push({
       participantId: id,
       participantName: name,
       matches: l0Matches,
@@ -283,7 +288,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
     };
 
     const l1Result = calculateLevel1Result(id, name, answers);
-    await submitLevel1(pin, l1Result);
+    session.level1Results.push(l1Result);
 
     // Level 2 Demo
     const l2Cases = {
@@ -307,7 +312,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
     if (idx % 3 === 0) l2Score -= 1;
     if (idx % 4 === 0) l2Score -= 1;
 
-    await submitLevel2(pin, {
+    session.level2Submissions.push({
       participantId: id,
       participantName: name,
       cases: l2Cases,
@@ -322,7 +327,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
       3: { causaId: 'causa_3', solucionId: 'sol_3' }
     };
     const l3Score = idx % 5 === 0 ? 5 : 6;
-    await submitLevel3(pin, {
+    session.level3Submissions.push({
       participantId: id,
       participantName: name,
       answers: l3Answers,
@@ -340,7 +345,7 @@ export async function generateDemoData(pin: string): Promise<SessionData> {
       ac_ml: idx % 3 === 0 ? 'm_trap1' : 'm_ml'
     };
     const l4Score = idx % 3 === 0 ? 5 : 6;
-    await submitLevel4(pin, {
+    session.level4Submissions.push({
       participantId: id,
       participantName: name,
       matches: l4Matches,

@@ -1,25 +1,43 @@
 import { createClient } from '@supabase/supabase-js';
 import { SessionData } from './types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const DEFAULT_SUPABASE_URL = 'https://nljlhymxnkwajmgsxiqx.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_2lmP1bTfqXKrUvqyumYUeQ_aH7k2XfM';
+
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_URL ||
+  DEFAULT_SUPABASE_URL;
+
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY;
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_ANON_KEY ||
+  DEFAULT_SUPABASE_KEY;
 
-export const supabase =
-  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function fetchSessionFromSupabase(pin: string): Promise<SessionData | null> {
-  if (!supabase) return null;
   try {
+    const cleanPin = pin.toUpperCase().trim();
     const { data, error } = await supabase
       .from('workshop_sessions')
       .select('data')
-      .eq('pin', pin.toUpperCase().trim())
+      .eq('pin', cleanPin)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      // If code is PGRST116 (no row found), that's expected on first run
+      if (error.code !== 'PGRST116') {
+        console.warn('Supabase fetch notice:', error.message);
+      }
+      return null;
+    }
+
+    if (!data || !data.data) return null;
     return data.data as SessionData;
   } catch (err) {
     console.error('Supabase fetch error:', err);
@@ -28,7 +46,6 @@ export async function fetchSessionFromSupabase(pin: string): Promise<SessionData
 }
 
 export async function saveSessionToSupabase(pin: string, sessionData: SessionData): Promise<boolean> {
-  if (!supabase) return false;
   try {
     const cleanPin = pin.toUpperCase().trim();
     const { error } = await supabase
@@ -43,7 +60,7 @@ export async function saveSessionToSupabase(pin: string, sessionData: SessionDat
       );
 
     if (error) {
-      console.error('Supabase upsert error:', error);
+      console.error('Supabase upsert error:', error.message);
       return false;
     }
     return true;

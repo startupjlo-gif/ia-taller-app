@@ -58,9 +58,15 @@ export const Header: React.FC<HeaderProps> = ({
             {pin}
           </span>
 
+          {isPresenter && (
+            <div className="flex items-center gap-1.5 ml-2 pl-3 border-l border-slate-700 text-[11px] text-emerald-400 font-semibold" title="Base de datos Supabase sincronizada en tiempo real">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Supabase Cloud</span>
+            </div>
+          )}
           {isPresenter && participantCount !== undefined && (
-            <div className="flex items-center gap-1 ml-3 pl-3 border-l border-slate-700 text-xs text-emerald-400 font-medium">
-              <Users className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 ml-2 pl-3 border-l border-slate-700 text-xs text-indigo-300 font-medium">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
               <span>{participantCount} participantes</span>
             </div>
           )}

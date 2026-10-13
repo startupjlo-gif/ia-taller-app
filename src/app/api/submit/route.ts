@@ -4,7 +4,8 @@ import {
   submitLevel1,
   submitLevel2,
   submitLevel3,
-  submitLevel4
+  submitLevel4,
+  registerParticipant
 } from '@/lib/session-store';
 import { calculateLevel1Result } from '@/lib/logic';
 
@@ -15,6 +16,11 @@ export async function POST(req: NextRequest) {
 
     if (!participantId) {
       return NextResponse.json({ error: 'Missing participantId' }, { status: 400 });
+    }
+
+    if (level === 'join') {
+      const participant = await registerParticipant(pin, participantId, participantName);
+      return NextResponse.json({ success: true, participant });
     }
 
     if (level === 0) {

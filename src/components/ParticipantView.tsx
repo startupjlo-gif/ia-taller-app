@@ -76,11 +76,27 @@ export const ParticipantView: React.FC<ParticipantViewProps> = ({ initialPin = '
     };
   }, [pin, hasJoined, autoSync]);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!participantName.trim()) return;
-    localStorage.setItem('ia_taller_participant_name', participantName.trim());
+    const cleanName = participantName.trim();
+    if (!cleanName) return;
+    localStorage.setItem('ia_taller_participant_name', cleanName);
     setHasJoined(true);
+
+    try {
+      await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pin,
+          level: 'join',
+          participantId,
+          participantName: cleanName
+        })
+      });
+    } catch (err) {
+      console.error('Participant join error:', err);
+    }
   };
 
   const levelTabs: { id: LevelId; label: string }[] = [
