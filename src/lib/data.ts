@@ -17,37 +17,37 @@ export const LEVEL0_CONCEPTS: ConceptPair[] = [
   {
     id: 'c1',
     concept: 'LLM',
-    definition: 'Un autocompletado gigante que predice la siguiente palabra'
+    definition: 'Un sistema entrenado para predecir la siguiente palabra de forma masiva y coherente.'
   },
   {
     id: 'c2',
     concept: 'Alucinación',
-    definition: 'Una respuesta que suena perfecta… pero es inventada'
+    definition: 'Una respuesta inventada que suena tan segura y convincente que parece real.'
   },
   {
     id: 'c3',
     concept: 'Token',
-    definition: 'La “moneda” con la que se mide y se paga cada consulta'
+    definition: 'La unidad básica de texto (palabra o fragmento) con la que se mide y cobra el uso de la IA.'
   },
   {
     id: 'c4',
     concept: 'Ventana de contexto',
-    definition: 'La memoria de trabajo: lo que no cabe, no lo ve'
+    definition: 'La memoria a corto plazo del modelo: todo lo que puede "leer" y recordar en una interacción.'
   },
   {
     id: 'c5',
     concept: 'Modelo local',
-    definition: 'Tus datos nunca salen de tu ordenador'
+    definition: 'Una IA que ejecuta en tu hardware, asegurando que tus datos nunca salgan de tu equipo.'
   },
   {
     id: 'c6',
     concept: 'API',
-    definition: 'La forma de meter la IA dentro de tu propio producto'
+    definition: 'El puente técnico que permite integrar la inteligencia artificial en tus propios productos.'
   },
   {
     id: 'c7',
     concept: 'Elegir modelo',
-    definition: 'Calidad, coste, privacidad y latencia'
+    definition: 'El balance entre cuatro factores clave: calidad, coste, velocidad (latencia) y privacidad.'
   }
 ];
 
