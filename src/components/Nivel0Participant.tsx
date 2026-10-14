@@ -12,13 +12,44 @@ interface Nivel0ParticipantProps {
   onSubmitted?: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getDerangedDefinitions(): { id: string; definition: string }[] {
+  const defs = LEVEL0_CONCEPTS.map((c) => ({ id: c.id, definition: c.definition }));
+  let shuffled = shuffleArray(defs);
+  let attempts = 0;
+  // Ensure that no concept is in the same position as its definition (100% mixed up)
+  while (attempts < 100 && shuffled.some((item, idx) => item.id === LEVEL0_CONCEPTS[idx].id)) {
+    shuffled = shuffleArray(defs);
+    attempts++;
+  }
+  return shuffled;
+}
+
+const INITIAL_SCRAMBLED_DEFS: { id: string; definition: string }[] = [
+  { id: LEVEL0_CONCEPTS[4].id, definition: LEVEL0_CONCEPTS[4].definition }, // Modelo local
+  { id: LEVEL0_CONCEPTS[2].id, definition: LEVEL0_CONCEPTS[2].definition }, // Token
+  { id: LEVEL0_CONCEPTS[6].id, definition: LEVEL0_CONCEPTS[6].definition }, // Elegir modelo
+  { id: LEVEL0_CONCEPTS[0].id, definition: LEVEL0_CONCEPTS[0].definition }, // LLM
+  { id: LEVEL0_CONCEPTS[5].id, definition: LEVEL0_CONCEPTS[5].definition }, // API
+  { id: LEVEL0_CONCEPTS[1].id, definition: LEVEL0_CONCEPTS[1].definition }, // Alucinación
+  { id: LEVEL0_CONCEPTS[3].id, definition: LEVEL0_CONCEPTS[3].definition }, // Ventana de contexto
+];
+
 export const Nivel0Participant: React.FC<Nivel0ParticipantProps> = ({
   pin,
   participantId,
   participantName,
   onSubmitted
 }) => {
-  const [shuffledDefinitions, setShuffledDefinitions] = useState<{ id: string; definition: string }[]>([]);
+  const [shuffledDefinitions, setShuffledDefinitions] = useState<{ id: string; definition: string }[]>(INITIAL_SCRAMBLED_DEFS);
   // matches: conceptId -> definitionId
   const [matches, setMatches] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<boolean>(false);
@@ -26,9 +57,7 @@ export const Nivel0Participant: React.FC<Nivel0ParticipantProps> = ({
   const [score, setScore] = useState<number>(0);
 
   const shuffleAll = () => {
-    const defs = LEVEL0_CONCEPTS.map((c) => ({ id: c.id, definition: c.definition }));
-    const shuffled = [...defs].sort(() => Math.random() - 0.5);
-    setShuffledDefinitions(shuffled);
+    setShuffledDefinitions(getDerangedDefinitions());
   };
 
   useEffect(() => {

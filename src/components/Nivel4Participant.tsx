@@ -13,6 +13,15 @@ interface Nivel4ParticipantProps {
   onSubmitted?: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export const Nivel4Participant: React.FC<Nivel4ParticipantProps> = ({
   pin,
   participantId,
@@ -26,7 +35,7 @@ export const Nivel4Participant: React.FC<Nivel4ParticipantProps> = ({
   const [score, setScore] = useState<number>(0);
 
   const shuffleMeanings = () => {
-    setShuffledMeanings([...MEANING_OPTIONS].sort(() => Math.random() - 0.5));
+    setShuffledMeanings(shuffleArray(MEANING_OPTIONS));
   };
 
   useEffect(() => {

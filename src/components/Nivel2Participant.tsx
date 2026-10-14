@@ -13,6 +13,15 @@ interface Nivel2ParticipantProps {
   onSubmitted?: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export const Nivel2Participant: React.FC<Nivel2ParticipantProps> = ({
   pin,
   participantId,
@@ -34,7 +43,7 @@ export const Nivel2Participant: React.FC<Nivel2ParticipantProps> = ({
   const shuffleAll = () => {
     const shuffled: Record<number, SlotOption[]> = {};
     LEVEL2_CASES.forEach((c) => {
-      shuffled[c.id] = [...c.options].sort(() => Math.random() - 0.5);
+      shuffled[c.id] = shuffleArray(c.options);
     });
     setShuffledOptions(shuffled);
   };
